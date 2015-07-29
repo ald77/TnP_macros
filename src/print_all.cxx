@@ -9,31 +9,43 @@
 
 using namespace std;
 
-void PrintPlots(const TString& set, const TString& measured, const TString &wp){
+void PrintDirectory(TDirectory &dir, const TString &set, const TString &measured, const TString &wp){
   TString lower_wp = wp;
   lower_wp.ToLower();
-  TFile file(measured == "id" ? "data/eff_"+set+"_id.root"
-	     : "data/eff_"+set+"_"+lower_wp+".root","read");
-  TString path = "GsfElectronToID/"+wp+"/fit_eff_plots";
-  if(measured != "id"){
-    path.ReplaceAll("GsfElectronToID",wp+"ToMiniIso");
-  }
-  TDirectory *dir = static_cast<TDirectory*>(file.Get(path));
-  if(dir == NULL) return;
-  TList *keys = dir->GetListOfKeys();
+  TList *keys = dir.GetListOfKeys();
   if(keys == NULL) return;
   for(int i = 0; i < keys->GetSize(); ++i){
     TObject *key = keys->At(i);
     if(key == NULL) continue;
     TString name = key->GetName();
-    TObject *obj = dir->Get(name);
+    if(name == "w") continue;
+    TObject *obj = dir.Get(name);
     if(obj == NULL) continue;
     TString class_name = obj->ClassName();
-    if(class_name != "TCanvas") continue;
-    TCanvas *canvas = static_cast<TCanvas*>(obj);
-    if(canvas == NULL) continue;
-    canvas->Print("plots/"+set+"_"+measured+"_"+lower_wp+"_"+name+".pdf");
+    if(class_name == "TCanvas"){
+      TCanvas *canvas = static_cast<TCanvas*>(obj);
+      if(canvas == NULL) continue;
+      canvas->Print("plots/"+set+"_"+measured+"_"+lower_wp+"_"+name+".pdf");
+    }else if(class_name.Contains("TDirectory")){
+      TDirectory *sub_dir = static_cast<TDirectory*>(obj);
+      if(sub_dir == NULL) continue;
+      PrintDirectory(*sub_dir, set, measured, wp);
+    }
   }
+}
+
+void PrintPlots(const TString& set, const TString& measured, const TString &wp){
+  TString lower_wp = wp;
+  lower_wp.ToLower();
+  TFile file(measured == "id" ? "data/eff_"+set+"_id.root"
+	     : "data/eff_"+set+"_"+lower_wp+".root","read");
+  TString path = "GsfElectronToID/"+wp;
+  if(measured != "id"){
+    path.ReplaceAll("GsfElectronToID",wp+"ElectronToMiniIso");
+  }
+  TDirectory *dir = static_cast<TDirectory*>(file.Get(path));
+  if(dir == NULL) return;
+  PrintDirectory(*dir, set, measured, wp);
 }
 
 int main(){
