@@ -49,15 +49,15 @@ void PrintPlots(const TString& set, const TString& measured, const TString &wp){
 }
 
 int main(){
-  vector<TString> set(2), measured(2), wp(4);
-  set.at(0) = "mc";
-  set.at(1) = "data";
-  measured.at(0) = "id";
-  measured.at(1) = "iso";
-  wp.at(0) = "Veto";
-  wp.at(1) = "Loose";
-  wp.at(2) = "Medium";
-  wp.at(3) = "Tight";
+  vector<TString> set, measured, wp;
+  set.push_back("mc");
+  set.push_back("data");
+  measured.push_back("id");
+  measured.push_back("iso");
+  wp.push_back("Veto");
+  wp.push_back("Loose");
+  wp.push_back("Medium");
+  wp.push_back("Tight");
 
   for(size_t iset = 0; iset < set.size(); ++iset){
     for(size_t imeasured = 0; imeasured < measured.size(); ++imeasured){
