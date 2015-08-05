@@ -13,6 +13,36 @@
 
 using namespace std;
 
+void PrintComparison(TH2 *h_data, TH2 *h_mc,
+		     const TString &measured, const TString &wp){
+  vector<TH1D*> rows_data(h_data->GetNbinsY());
+  vector<TH1D*> rows_mc(rows_data);
+  TCanvas c;
+  for(size_t i = 0; i < rows_data.size(); ++i){
+    TString ext = "_px_";
+    ext = ext + i;
+    rows_data.at(i) = h_data->ProjectionX(ext+"data", i+1, i+1, "e");
+    rows_mc.at(i) = h_mc->ProjectionX(ext+"_mc", i+1, i+1, "e");
+    rows_data.at(i)->SetLineColor(i+1);
+    rows_mc.at(i)->SetLineColor(i+1);
+    rows_data.at(i)->SetMarkerColor(i+1);
+    rows_mc.at(i)->SetMarkerColor(i+1);
+    rows_data.at(i)->SetLineStyle(1);
+    rows_mc.at(i)->SetLineStyle(2);
+    rows_data.at(i)->SetMarkerStyle(20);
+    rows_mc.at(i)->SetMarkerStyle(20);
+    rows_data.at(i)->SetMarkerSize(1);
+    rows_mc.at(i)->SetMarkerSize(1);
+    if(i==0){
+      rows_mc.at(i)->Draw();
+    }else{
+      rows_mc.at(i)->Draw("same");
+    }
+    rows_data.at(i)->Draw("same");
+  }
+  c.Print("plots/comp_"+measured+"_"+wp+".pdf");
+}
+
 void PrintDirectory(TDirectory &mc_dir, TDirectory &data_dir,
 		    const TString &measured, const TString &wp){
   TString lower_wp = wp;
@@ -40,6 +70,11 @@ void PrintDirectory(TDirectory &mc_dir, TDirectory &data_dir,
 	if(class_name.Contains("TH1") || class_name.Contains("TH2")){
 	  TH1 *h_data = static_cast<TH1*>(c_data->GetPrimitive(name));
 	  TH1 *h_mc = static_cast<TH1*>(c_mc->GetPrimitive(name));
+	  if(class_name.Contains("TH2")){
+	    PrintComparison(static_cast<TH2*>(h_data),
+			    static_cast<TH2*>(h_mc),
+			    measured, wp);
+	  }
 	  if(h_data == NULL || h_mc == NULL) continue;
 	  h_data->Divide(h_mc);
 	  h_data->SetMinimum(0.5);
