@@ -9,7 +9,8 @@
 
 using namespace std;
 
-void PrintDirectory(TDirectory &dir, const TString &set, const TString &measured, const TString &wp){
+void PrintDirectory(TDirectory &dir, const TString &set, const TString &measured,
+		    const TString &wp, const TString &ext = ""){
   TString lower_wp = wp;
   lower_wp.ToLower();
   TList *keys = dir.GetListOfKeys();
@@ -25,11 +26,11 @@ void PrintDirectory(TDirectory &dir, const TString &set, const TString &measured
     if(class_name == "TCanvas"){
       TCanvas *canvas = static_cast<TCanvas*>(obj);
       if(canvas == NULL) continue;
-      canvas->Print("plots/"+set+"_"+measured+"_"+lower_wp+"_"+name+".pdf");
+      canvas->Print("plots/"+set+"_"+measured+"_"+lower_wp+"_"+ext+name+".pdf");
     }else if(class_name.Contains("TDirectory")){
       TDirectory *sub_dir = static_cast<TDirectory*>(obj);
       if(sub_dir == NULL) continue;
-      PrintDirectory(*sub_dir, set, measured, wp);
+      PrintDirectory(*sub_dir, set, measured, wp, ext+name+"_");
     }
   }
 }
