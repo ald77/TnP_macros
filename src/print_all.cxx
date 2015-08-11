@@ -40,9 +40,12 @@ void PrintPlots(const TString& set, const TString& measured, const TString &wp){
   lower_wp.ToLower();
   TFile file(measured == "id" ? "data/eff_"+set+"_id.root"
 	     : "data/eff_"+set+"_"+lower_wp+".root","read");
-  TString path = "GsfElectronToID/"+wp;
+  TString path = "GsfElectronToID/MCtruth_"+wp;
   if(measured != "id"){
     path.ReplaceAll("GsfElectronToID",wp+"ElectronToMiniIso");
+  }
+  if(set != "mc"){
+    path.ReplaceAll("MCtruth_","");
   }
   TDirectory *dir = static_cast<TDirectory*>(file.Get(path));
   if(dir == NULL) return;
