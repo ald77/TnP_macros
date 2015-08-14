@@ -1,6 +1,7 @@
 #include "print_scale_factors.hpp"
 
-#include <iostream>
+#include <iomanip>
+#include <fstream>
 
 #include "TStyle.h"
 #include "TColor.h"
@@ -26,7 +27,7 @@ int main(){
   gStyle->SetPaintTextFormat("2.3f");
   gStyle->SetNumberContours(bands);
   gStyle->SetPalette(bands, patriotic);
-  
+
   PrintScaleFactors("id");
   PrintScaleFactors("loose");
   PrintScaleFactors("veto");
@@ -35,15 +36,13 @@ int main(){
 }
 
 void PrintScaleFactors(const TString &file_ext){
-  //cout << "Scale factors: " << file_ext << endl;
   TFile data_file("data/eff_data_"+file_ext+".root","read");
   TFile mc_file("data/eff_mc_"+file_ext+".root","read");
   if(!(data_file.IsOpen() && mc_file.IsOpen())) return;
-  PrintDirectory(data_file, mc_file, file_ext);
+  PrintDirectory(data_file, mc_file, file_ext, true);
 }
 
-void PrintDirectory(TDirectory &data_dir, TDirectory &mc_dir, const TString &ext){
-  //cout << "Directory: " << data_dir.GetName() << ", " << mc_dir.GetName() << endl;
+void PrintDirectory(TDirectory &data_dir, TDirectory &mc_dir, const TString &ext, bool get_true){
   TList *keys = mc_dir.GetListOfKeys();
   if(keys == NULL) return;
   for(int i = 0; i <keys->GetSize(); ++i){
@@ -58,14 +57,15 @@ void PrintDirectory(TDirectory &data_dir, TDirectory &mc_dir, const TString &ext
 
     TObject *data_obj = data_dir.Get(data_name);
     if(data_obj == NULL) continue;
-    PrintObjects(data_obj, mc_dir.Get(name), ext);
-    PrintObjects(data_obj, mc_dir.Get(data_name), ext);
+    PrintObjects(data_obj, mc_dir.Get(name), ext, get_true);
+    if(data_name != name){
+      PrintObjects(data_obj, mc_dir.Get(data_name), ext, false);
+    }
   }
 }
 
-void PrintObjects(TObject *data_obj,TObject *mc_obj, const TString &ext){
+void PrintObjects(TObject *data_obj,TObject *mc_obj, const TString &ext, bool get_true){
   if(data_obj == NULL || mc_obj == NULL) return;
-  //cout << "Objects: " << data_obj->GetName() << ", " << mc_obj->GetName() << endl;
   TString class_name = data_obj->ClassName();
   TString mc_name = mc_obj->GetName();
   if(class_name == "TCanvas"){
@@ -75,12 +75,11 @@ void PrintObjects(TObject *data_obj,TObject *mc_obj, const TString &ext){
   }else if(class_name.Contains("TDirectory")){
     PrintDirectory(*static_cast<TDirectory*>(data_obj),
                    *static_cast<TDirectory*>(mc_obj),
-                   ext+"_"+mc_name);
+                   ext+"_"+mc_name, get_true);
   }
 }
 
 void PrintCanvas(TCanvas &data_can, TCanvas &mc_can, const TString &ext){
-  //cout << "Canvas: " << data_can.GetName() << ", " << mc_can.GetName() << endl;
   TList *list = mc_can.GetListOfPrimitives();
   if(list == NULL) return;
   for(int i = 0; i < list->GetSize(); ++i){
@@ -115,7 +114,7 @@ void PrintCanvas(TCanvas &data_can, TCanvas &mc_can, const TString &ext){
 
 void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TString &ext){
   if(h_data_in == NULL || h_mc_in == NULL) return;
-  //cout << "2D: " << h_data_in->GetName() << ", " << h_mc_in->GetName() << endl;
+
   TH2 *h_data = static_cast<TH2*>(h_data_in->Clone());
   if(h_data == NULL) return;
   TH2 *h_mc = static_cast<TH2*>(h_mc_in->Clone());
@@ -130,9 +129,11 @@ void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TStri
   h_data->Draw("colz");
   h_data->Draw("textesame");
   canvas.Print("plots/2d_data_"+ext+".pdf");
+  PrintTable(h_data, "data_"+ext);
   h_mc->Draw("colz");
   h_mc->Draw("textesame");
   canvas.Print("plots/2d_mc_"+ext+".pdf");
+  PrintTable(h_mc, "mc_"+ext);
 
   gStyle->SetPalette(bands, patriotic);
   h_data->Divide(h_mc);
@@ -142,6 +143,7 @@ void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TStri
   h_data->Draw("colz");
   h_data->Draw("textesame");
   canvas.Print("plots/sf_"+ext+".pdf");
+  PrintTable(h_data, "sf_"+ext);
 
   if(h_data != NULL){
     delete h_data;
@@ -155,7 +157,7 @@ void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TStri
 
 void Print1D(TH1 const * const h_data_in, TH1 const * const h_mc_in, const TString &ext){
   if(h_data_in == NULL || h_mc_in == NULL) return;
-  //cout << "1D: " << h_data_in->GetName() << ", " << h_mc_in->GetName() << endl;
+
   TH1 *h_data = static_cast<TH1*>(h_data_in->Clone());
   if(h_data == NULL) return;
   TH1 *h_mc = static_cast<TH1*>(h_mc_in->Clone());
@@ -177,6 +179,48 @@ void Print1D(TH1 const * const h_data_in, TH1 const * const h_mc_in, const TStri
     delete h_mc;
     h_mc = NULL;
   }
+}
+
+void PrintTable(TH2 const * const histo, const TString &ext){
+  int eta = ext.Index("abseta");
+  int pt = ext.Index("_et_");
+  if(eta<0 || pt<0 || pt<eta) return;
+
+  ofstream file("tables/"+ext+".tex");
+  file << "\\documentclass{article}\n\n";
+
+  file << "\\begin{document}\n";
+  file << "\\begin{table}\n";
+  file << "  \\begin{tabular}{r|rrrrr}\n";
+  file << "    \\hline\\hline\n";
+  file << "    & \\multicolumn{5}{c}{$p_T$ [GeV]}\\\\\n";
+  file << "    $|\\eta|$ & 10-20 & 20-30 & 30-40 & 40-50 & 50-200\\\\\n";
+  file << "    \\hline\n";
+  PrintLine(file, histo, 1, "0-1.442");
+  PrintLine(file, histo, 2, "1.442-1.556");
+  PrintLine(file, histo, 3, "1.556-2.5");
+  file << "    \\hline\\hline\n";
+  file << "  \\end{tabular}\n";
+  file << "\\end{table}\n";
+  file << "\\end{document}\n";
+
+  file.flush();
+  file.close();
+}
+
+void PrintLine(ofstream &file, TH2 const * const histo, int bin, const TString &label){
+  if(!file.is_open()) return;
+
+  if(histo == NULL || histo->GetNbinsX() < bin || histo->GetNbinsY()<5) return;
+  file << "    " << label;
+  for(int y = 1; y <= 5; ++y){
+    file << " & $"
+         << fixed << setprecision(3) << histo->GetBinContent(bin, y)
+         << "\\pm"
+         << fixed << setprecision(3) << histo->GetBinError(bin, y)
+         << "$";
+  }
+  file << "\\\\\n";
 }
 
 void GetPatrioticPalette(){
