@@ -122,7 +122,11 @@ void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TStri
   if(h_mc == NULL) return;
 
   TCanvas canvas;
+  canvas.SetLogy();
   gStyle->SetPalette(bands, rainbow);
+  h_data->SetMarkerSize(2);
+  h_mc->SetMarkerSize(2);
+
   h_data->Draw("colz");
   h_data->Draw("textesame");
   canvas.Print("plots/2d_data_"+ext+".pdf");
