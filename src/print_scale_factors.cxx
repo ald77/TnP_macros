@@ -28,11 +28,19 @@ int main(){
   gStyle->SetNumberContours(bands);
   gStyle->SetPalette(bands, patriotic);
 
-  PrintScaleFactors("id");
-  PrintScaleFactors("loose");
-  PrintScaleFactors("veto");
-  PrintScaleFactors("medium");
-  PrintScaleFactors("tight");
+  PrintScaleFactors("veto_id");
+  PrintScaleFactors("veto_iso");
+  PrintScaleFactors("loose_id");
+  PrintScaleFactors("loose_iso");
+  PrintScaleFactors("medium_id");
+  PrintScaleFactors("medium_iso");
+  PrintScaleFactors("tight_id");
+  PrintScaleFactors("tight_iso");
+  // PrintScaleFactors("id");
+  // PrintScaleFactors("loose");
+  // PrintScaleFactors("veto");
+  // PrintScaleFactors("medium");
+  // PrintScaleFactors("tight");
 }
 
 void PrintScaleFactors(const TString &file_ext){
