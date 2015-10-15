@@ -62,19 +62,27 @@ void PrintPlots(TString file_name){
 
 int main(){
   PrintPlots("data/eff_data_veto_id.root");
-  PrintPlots("data/eff_data_veto_iso.root");
+  PrintPlots("data/eff_data_veto_iso_eta.root");
+  PrintPlots("data/eff_data_veto_iso_act.root");
   PrintPlots("data/eff_data_loose_id.root");
-  PrintPlots("data/eff_data_loose_iso.root");
+  PrintPlots("data/eff_data_loose_iso_eta.root");
+  PrintPlots("data/eff_data_loose_iso_act.root");
   PrintPlots("data/eff_data_medium_id.root");
-  PrintPlots("data/eff_data_medium_iso.root");
+  PrintPlots("data/eff_data_medium_iso_eta.root");
+  PrintPlots("data/eff_data_medium_iso_act.root");
   PrintPlots("data/eff_data_tight_id.root");
-  PrintPlots("data/eff_data_tight_iso.root");
+  PrintPlots("data/eff_data_tight_iso_eta.root");
+  PrintPlots("data/eff_data_tight_iso_act.root");
   PrintPlots("data/eff_mc_veto_id.root");
-  PrintPlots("data/eff_mc_veto_iso.root");
+  PrintPlots("data/eff_mc_veto_iso_eta.root");
+  PrintPlots("data/eff_mc_veto_iso_act.root");
   PrintPlots("data/eff_mc_loose_id.root");
-  PrintPlots("data/eff_mc_loose_iso.root");
+  PrintPlots("data/eff_mc_loose_iso_eta.root");
+  PrintPlots("data/eff_mc_loose_iso_act.root");
   PrintPlots("data/eff_mc_medium_id.root");
-  PrintPlots("data/eff_mc_medium_iso.root");
+  PrintPlots("data/eff_mc_medium_iso_eta.root");
+  PrintPlots("data/eff_mc_medium_iso_act.root");
   PrintPlots("data/eff_mc_tight_id.root");
-  PrintPlots("data/eff_mc_tight_iso.root");
+  PrintPlots("data/eff_mc_tight_iso_eta.root");
+  PrintPlots("data/eff_mc_tight_iso_act.root");
 }

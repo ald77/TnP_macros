@@ -1,7 +1,9 @@
 #include "print_scale_factors.hpp"
 
+#include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <sstream>
 
 #include "TStyle.h"
 #include "TColor.h"
@@ -29,18 +31,17 @@ int main(){
   gStyle->SetPalette(bands, patriotic);
 
   PrintScaleFactors("veto_id");
-  PrintScaleFactors("veto_iso");
+  PrintScaleFactors("veto_iso_act");
+  PrintScaleFactors("veto_iso_eta");
   PrintScaleFactors("loose_id");
-  PrintScaleFactors("loose_iso");
+  PrintScaleFactors("loose_iso_act");
+  PrintScaleFactors("loose_iso_eta");
   PrintScaleFactors("medium_id");
-  PrintScaleFactors("medium_iso");
+  PrintScaleFactors("medium_iso_act");
+  PrintScaleFactors("medium_iso_eta");
   PrintScaleFactors("tight_id");
-  PrintScaleFactors("tight_iso");
-  // PrintScaleFactors("id");
-  // PrintScaleFactors("loose");
-  // PrintScaleFactors("veto");
-  // PrintScaleFactors("medium");
-  // PrintScaleFactors("tight");
+  PrintScaleFactors("tight_iso_act");
+  PrintScaleFactors("tight_iso_eta");
 }
 
 void PrintScaleFactors(const TString &file_ext){
@@ -51,6 +52,14 @@ void PrintScaleFactors(const TString &file_ext){
 }
 
 void PrintDirectory(TDirectory &data_dir, TDirectory &mc_dir, const TString &ext, bool get_true){
+  string data_path = data_dir.GetPath();
+  string mc_path = mc_dir.GetPath();
+  if(data_path.find("cnt_enf") != string::npos
+     || mc_path.find("cnt_eff") != string::npos){
+    cout << data_path << endl;
+    cout << mc_path << endl;
+    cout << endl;
+  }
   TList *keys = mc_dir.GetListOfKeys();
   if(keys == NULL) return;
   for(int i = 0; i <keys->GetSize(); ++i){
@@ -62,6 +71,7 @@ void PrintDirectory(TDirectory &data_dir, TDirectory &mc_dir, const TString &ext
     data_name.ReplaceAll("_and_mcTrue_true","");
     data_name.ReplaceAll("__mcTrue_true","");
     data_name.ReplaceAll("_mcTrue_true","");
+    data_name.ReplaceAll("cnt_eff","fit_eff");
 
     TObject *data_obj = data_dir.Get(data_name);
     if(data_obj == NULL) continue;
@@ -120,47 +130,74 @@ void PrintCanvas(TCanvas &data_can, TCanvas &mc_can, const TString &ext){
   }
 }
 
+TH2D TranslateHisto(const TH2 &input){
+  int nx = input.GetNbinsX();
+  int ny = input.GetNbinsY();
+  TH2D output(input.GetName(), input.GetTitle(), nx, 0.5, nx+0.5, ny, 0.5, ny+0.5);
+  output.Sumw2();
+  output.SetStats(false);
+  output.SetMarkerSize(2);
+  output.SetLabelSize(0.05,"XYZ");
+  output.SetTitleSize(0.05,"XYZ");
+  for(int ix = 0; ix <= nx+1; ++ix){
+    for(int iy = 0; iy <= ny+1; ++iy){
+      output.SetBinContent(ix, iy, input.GetBinContent(ix, iy));
+      output.SetBinError(ix, iy, input.GetBinError(ix, iy));
+    }
+  }
+  
+  for(int ix = 1; ix <= nx; ++ix){
+    const TAxis *iaxis = input.GetXaxis();
+    TAxis *oaxis = output.GetXaxis();
+    if(iaxis == NULL || oaxis == NULL) continue;
+    oaxis->SetTitle(iaxis->GetTitle());
+    ostringstream oss;
+    oss << iaxis->GetBinLowEdge(ix) << "-" << iaxis->GetBinUpEdge(ix) << flush;
+    oaxis->SetBinLabel(ix, oss.str().c_str());
+  }
+
+  for(int iy = 1; iy <= ny; ++iy){
+    const TAxis *iaxis = input.GetYaxis();
+    TAxis *oaxis = output.GetYaxis();
+    if(iaxis == NULL || oaxis == NULL) continue;
+    oaxis->SetTitle(iaxis->GetTitle());
+    ostringstream oss;
+    oss << iaxis->GetBinLowEdge(iy) << "-" << iaxis->GetBinUpEdge(iy) << flush;
+    oaxis->SetBinLabel(iy, oss.str().c_str());
+  }
+
+  return output;
+}
+
 void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TString &ext){
   if(h_data_in == NULL || h_mc_in == NULL) return;
 
-  TH2 *h_data = static_cast<TH2*>(h_data_in->Clone());
-  if(h_data == NULL) return;
-  TH2 *h_mc = static_cast<TH2*>(h_mc_in->Clone());
-  if(h_mc == NULL) return;
+  TH2D h_data = TranslateHisto(*h_data_in);
+  TH2D h_mc = TranslateHisto(*h_mc_in);
 
   TCanvas canvas;
-  canvas.SetLogy();
   gStyle->SetPalette(bands, rainbow);
-  h_data->SetMarkerSize(2);
-  h_mc->SetMarkerSize(2);
+  h_data.SetMarkerSize(2);
+  h_mc.SetMarkerSize(2);
 
-  h_data->Draw("colz");
-  h_data->Draw("textesame");
+  h_data.Draw("colz");
+  h_data.Draw("textesame");
   canvas.Print("plots/2d_data_"+ext+".pdf");
-  PrintTable(h_data, "data_"+ext);
-  h_mc->Draw("colz");
-  h_mc->Draw("textesame");
+  PrintTable(&h_data, "data_"+ext);
+  h_mc.Draw("colz");
+  h_mc.Draw("textesame");
   canvas.Print("plots/2d_mc_"+ext+".pdf");
-  PrintTable(h_mc, "mc_"+ext);
+  PrintTable(&h_mc, "mc_"+ext);
 
   gStyle->SetPalette(bands, patriotic);
-  h_data->Divide(h_mc);
-  h_data->SetMinimum(0.8);
-  h_data->SetMaximum(1.25);
+  h_data.Divide(&h_mc);
+  h_data.SetMinimum(0.8);
+  h_data.SetMaximum(1.25);
   canvas.SetLogz();
-  h_data->Draw("colz");
-  h_data->Draw("textesame");
+  h_data.Draw("colz");
+  h_data.Draw("textesame");
   canvas.Print("plots/sf_"+ext+".pdf");
-  PrintTable(h_data, "sf_"+ext);
-
-  if(h_data != NULL){
-    delete h_data;
-    h_data = NULL;
-  }
-  if(h_mc != NULL){
-    delete h_mc;
-    h_mc = NULL;
-  }
+  PrintTable(&h_data, "sf_"+ext);
 }
 
 void Print1D(TH1 const * const h_data_in, TH1 const * const h_mc_in, const TString &ext){
