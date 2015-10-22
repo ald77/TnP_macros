@@ -30,18 +30,26 @@ int main(){
   gStyle->SetNumberContours(bands);
   gStyle->SetPalette(bands, patriotic);
 
-  PrintScaleFactors("veto_id");
-  PrintScaleFactors("veto_iso_act");
-  PrintScaleFactors("veto_iso_eta");
-  PrintScaleFactors("loose_id");
-  PrintScaleFactors("loose_iso_act");
-  PrintScaleFactors("loose_iso_eta");
-  PrintScaleFactors("medium_id");
-  PrintScaleFactors("medium_iso_act");
-  PrintScaleFactors("medium_iso_eta");
-  PrintScaleFactors("tight_id");
-  PrintScaleFactors("tight_iso_act");
-  PrintScaleFactors("tight_iso_eta");
+  PrintScaleFactors("foid2d");
+  PrintScaleFactors("loose");
+  PrintScaleFactors("loose2d");
+  PrintScaleFactors("medium");
+  PrintScaleFactors("mediummini4_act");
+  PrintScaleFactors("mediummini4_eta");
+  PrintScaleFactors("mediummini_act");
+  PrintScaleFactors("mediummini_eta");
+  PrintScaleFactors("mvavlooseconvihit0chg_act");
+  PrintScaleFactors("mvavlooseconvihit0chg_eta");
+  PrintScaleFactors("mvavlooseconvihit1_act");
+  PrintScaleFactors("mvavlooseconvihit1_eta");
+  PrintScaleFactors("mvavloosemini4_act");
+  PrintScaleFactors("mvavloosemini4_eta");
+  PrintScaleFactors("mvavloosemini_act");
+  PrintScaleFactors("mvavloosemini_eta");
+  PrintScaleFactors("tight");
+  PrintScaleFactors("tight2d3d");
+  PrintScaleFactors("tightid2d3d");
+  PrintScaleFactors("veto");
 }
 
 void PrintScaleFactors(const TString &file_ext){
@@ -183,10 +191,12 @@ void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TStri
   h_data.Draw("colz");
   h_data.Draw("textesame");
   canvas.Print("plots/2d_data_"+ext+".pdf");
+  canvas.Print("plots/2d_data_"+ext+".png");
   PrintTable(&h_data, "data_"+ext);
   h_mc.Draw("colz");
   h_mc.Draw("textesame");
   canvas.Print("plots/2d_mc_"+ext+".pdf");
+  canvas.Print("plots/2d_mc_"+ext+".png");
   PrintTable(&h_mc, "mc_"+ext);
 
   gStyle->SetPalette(bands, patriotic);
@@ -197,6 +207,7 @@ void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TStri
   h_data.Draw("colz");
   h_data.Draw("textesame");
   canvas.Print("plots/sf_"+ext+".pdf");
+  canvas.Print("plots/sf_"+ext+".png");
   PrintTable(&h_data, "sf_"+ext);
 }
 
@@ -215,6 +226,7 @@ void Print1D(TH1 const * const h_data_in, TH1 const * const h_mc_in, const TStri
   h_mc->Draw();
   h_data->Draw("same");
   canvas.Print("plots/1d_"+ext+".pdf");
+  canvas.Print("plots/1d_"+ext+".png");
 
   if(h_data != NULL){
     delete h_data;
