@@ -38,8 +38,8 @@ int main(){
   PrintScaleFactors("mediummini4_eta");
   PrintScaleFactors("mediummini_act");
   PrintScaleFactors("mediummini_eta");
-  PrintScaleFactors("mvavlooseconvihit0chg_act");
-  PrintScaleFactors("mvavlooseconvihit0chg_eta");
+  PrintScaleFactors("mvatightconvihit0chg_act");
+  PrintScaleFactors("mvatightconvihit0chg_eta");
   PrintScaleFactors("mvavlooseconvihit1_act");
   PrintScaleFactors("mvavlooseconvihit1_eta");
   PrintScaleFactors("mvavloosemini4_act");
@@ -188,11 +188,15 @@ void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TStri
   h_data.SetMarkerSize(2);
   h_mc.SetMarkerSize(2);
 
+  h_data.SetMinimum(0.0);
+  h_data.SetMaximum(1.0);
   h_data.Draw("colz");
   h_data.Draw("textesame");
   canvas.Print("plots/2d_data_"+ext+".pdf");
   canvas.Print("plots/2d_data_"+ext+".png");
   PrintTable(&h_data, "data_"+ext);
+  h_mc.SetMinimum(0.0);
+  h_mc.SetMaximum(1.0);
   h_mc.Draw("colz");
   h_mc.Draw("textesame");
   canvas.Print("plots/2d_mc_"+ext+".pdf");
