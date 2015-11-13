@@ -36,6 +36,8 @@ int main(){
   PrintScaleFactors("medium");
   PrintScaleFactors("mediummini4_act");
   PrintScaleFactors("mediummini4_eta");
+  PrintScaleFactors("mediummulti_act");
+  PrintScaleFactors("mediummulti_eta");
   PrintScaleFactors("mediummini_act");
   PrintScaleFactors("mediummini_eta");
   PrintScaleFactors("mvatightconvihit0chg_act");
@@ -44,6 +46,8 @@ int main(){
   PrintScaleFactors("mvavlooseconvihit1_eta");
   PrintScaleFactors("mvavloosemini4_act");
   PrintScaleFactors("mvavloosemini4_eta");
+  PrintScaleFactors("mvavloosemulti_act");
+  PrintScaleFactors("mvavloosemulti_eta");
   PrintScaleFactors("mvavloosemini_act");
   PrintScaleFactors("mvavloosemini_eta");
   PrintScaleFactors("tight");

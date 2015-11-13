@@ -69,6 +69,8 @@ int main(){
   PrintPlots("data/eff_data_medium.root");
   PrintPlots("data/eff_data_mediummini4_act.root");
   PrintPlots("data/eff_data_mediummini4_eta.root");
+  PrintPlots("data/eff_data_mediummulti_act.root");
+  PrintPlots("data/eff_data_mediummulti_eta.root");
   PrintPlots("data/eff_data_mediummini_act.root");
   PrintPlots("data/eff_data_mediummini_eta.root");
   PrintPlots("data/eff_data_mvavlooseconvihit0chg_act.root");
@@ -77,6 +79,8 @@ int main(){
   PrintPlots("data/eff_data_mvavlooseconvihit1_eta.root");
   PrintPlots("data/eff_data_mvavloosemini4_act.root");
   PrintPlots("data/eff_data_mvavloosemini4_eta.root");
+  PrintPlots("data/eff_data_mvavloosemulti_act.root");
+  PrintPlots("data/eff_data_mvavloosemulti_eta.root");
   PrintPlots("data/eff_data_mvavloosemini_act.root");
   PrintPlots("data/eff_data_mvavloosemini_eta.root");
   PrintPlots("data/eff_data_tight.root");
@@ -89,6 +93,8 @@ int main(){
   PrintPlots("data/eff_mc_medium.root");
   PrintPlots("data/eff_mc_mediummini4_act.root");
   PrintPlots("data/eff_mc_mediummini4_eta.root");
+  PrintPlots("data/eff_mc_mediummulti_act.root");
+  PrintPlots("data/eff_mc_mediummulti_eta.root");
   PrintPlots("data/eff_mc_mediummini_act.root");
   PrintPlots("data/eff_mc_mediummini_eta.root");
   PrintPlots("data/eff_mc_mvatightconvihit0chg_act.root");
@@ -97,6 +103,8 @@ int main(){
   PrintPlots("data/eff_mc_mvavlooseconvihit1_eta.root");
   PrintPlots("data/eff_mc_mvavloosemini4_act.root");
   PrintPlots("data/eff_mc_mvavloosemini4_eta.root");
+  PrintPlots("data/eff_mc_mvavloosemulti_act.root");
+  PrintPlots("data/eff_mc_mvavloosemulti_eta.root");
   PrintPlots("data/eff_mc_mvavloosemini_act.root");
   PrintPlots("data/eff_mc_mvavloosemini_eta.root");
   PrintPlots("data/eff_mc_tight.root");
