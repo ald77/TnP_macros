@@ -209,8 +209,8 @@ void Print2D(TH2 const * const h_data_in, TH2 const * const h_mc_in, const TStri
 
   gStyle->SetPalette(bands, patriotic);
   h_data.Divide(&h_mc);
-  h_data.SetMinimum(0.8);
-  h_data.SetMaximum(1.25);
+  h_data.SetMinimum(0.5);
+  h_data.SetMaximum(2.0);
   canvas.SetLogz();
   h_data.Draw("colz");
   h_data.Draw("textesame");

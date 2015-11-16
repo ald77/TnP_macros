@@ -26,7 +26,6 @@ void PrintDirectory(TDirectory &dir, const TString &ext = ""){
       TString out_name = ext+"_"+name;
       out_name.ReplaceAll("/","_");
       canvas->Print("plots/"+out_name+".pdf");
-      canvas->Print("plots/"+out_name+".png");
     }else if(class_name.Contains("TDirectory")){
       TDirectory *sub_dir = static_cast<TDirectory*>(obj);
       if(sub_dir == NULL) continue;
@@ -53,7 +52,6 @@ void PrintPlots(TString file_name){
       TCanvas *canvas = static_cast<TCanvas*>(obj);
       if(canvas == NULL) continue;
       canvas->Print("plots/"+file_name+name+".pdf");
-      canvas->Print("plots/"+file_name+name+".png");
     }else if(class_name.Contains("TDirectory")){
       TDirectory *sub_dir = static_cast<TDirectory*>(obj);
       if(sub_dir == NULL) continue;
