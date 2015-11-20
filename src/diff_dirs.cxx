@@ -1,5 +1,7 @@
 #include "diff_dirs.hpp"
 
+#include <cmath>
+
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -7,6 +9,7 @@
 #include <vector>
 #include <stdexcept>
 #include <string>
+#include <algorithm>
 #include <memory>
 
 #include "TStyle.h"
@@ -36,7 +39,8 @@ int main(){
 
   vector<TString> dirs = {"~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_19_normal",
 			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_expbkg",
-			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_cbres"};
+			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_cbres",
+			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_redrange_v2"};
 
   PrintScaleFactors(dirs, "foid2d");
   PrintScaleFactors(dirs, "loose");
@@ -257,13 +261,20 @@ void Print2D(const vector<TH2*> &data_hists,
     }
   }
 
+  TH2D hnominal = hmax;
+  vector<vector<vector<double> > > stats(hmax.GetNbinsX(), vector<vector<double> >(hmax.GetNbinsY(), vector<double>(0)));
   for(size_t i = 0; i < data_hists.size(); ++i){
     if(data_hists.at(i) == nullptr || mc_hists.at(i) == nullptr) continue;
     TH2D hdata = TranslateHisto(*data_hists.at(i));
     TH2D hmc = TranslateHisto(*mc_hists.at(i));
     hdata.Divide(&hmc);
+    if(i==0) hnominal = hdata;
     for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
       for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
+	if(ix >= 1 && ix <= hmax.GetNbinsX()
+	   && iy >= 1 && iy <= hmax.GetNbinsY()){
+	  stats.at(ix-1).at(iy-1).push_back(hdata.GetBinError(ix ,iy));
+	}
 	double z = hdata.GetBinContent(ix, iy);
 	double zmax = hmax.GetBinContent(ix, iy);
 	double zmin = hmin.GetBinContent(ix, iy);
@@ -273,13 +284,17 @@ void Print2D(const vector<TH2*> &data_hists,
     }
   }
 
+  bool include_stats = true;
+  double stat_mult = include_stats ? 1. : 0.;
   TH2D hmid = hmax;
   for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
     for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
       double err = hmax.GetBinContent(ix, iy)-hmin.GetBinContent(ix, iy);
-      double avg = hmin.GetBinContent(ix, iy)+0.5*err;
-      hmid.SetBinContent(ix, iy, avg);
-      hmid.SetBinError(ix, iy, err);
+      double val = hnominal.GetBinContent(ix, iy);
+      hmid.SetBinContent(ix, iy, val);
+      int iix = (ix < 1) ? 1 : ((ix > hmax.GetNbinsX()) ? hmax.GetNbinsX() : ix);
+      int iiy = (iy < 1) ? 1 : ((iy > hmax.GetNbinsY()) ? hmax.GetNbinsY() : iy);
+      hmid.SetBinError(ix, iy, hypot(err, stat_mult*Median(stats.at(iix-1).at(iiy-1))));
     }
   }
 
@@ -360,4 +375,12 @@ void GetRainbowPalette(){
   for(int i = 0; i < bands; ++i){
     rainbow[i] = fi+i;
   }
+}
+
+double Median(vector<double> v){
+  if(v.size() == 0) return 0.;
+  sort(v.begin(), v.end());
+  bool is_odd = (v.size() % 2);
+  size_t mid = floor(0.5*(v.size()-1));
+  return is_odd ? v.at(mid) : 0.5*(v.at(mid)+v.at(mid+1));
 }

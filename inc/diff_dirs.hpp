@@ -25,6 +25,8 @@ void PrintLine(std::ofstream &file, TH2 const * const histo, int bin, const TStr
 void GetPatrioticPalette();
 void GetRainbowPalette();
 
+double Median(std::vector<double> v);
+
 template<typename To, typename From>
 std::vector<To*> Convert(const std::vector<From*> &in){
   std::vector<To*> out(in.size());
