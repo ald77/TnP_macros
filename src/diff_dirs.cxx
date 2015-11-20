@@ -34,7 +34,9 @@ int main(){
   gStyle->SetNumberContours(bands);
   gStyle->SetPalette(bands, patriotic);
 
-  vector<TString> dirs = {"data", "data"};
+  vector<TString> dirs = {"~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_19_normal",
+			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_expbkg",
+			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_cbres"};
 
   PrintScaleFactors(dirs, "foid2d");
   PrintScaleFactors(dirs, "loose");
@@ -116,17 +118,21 @@ void PrintDirectory(const vector<TDirectory*> &data_dirs,
     vector<TObject*> mc_objs(mc_dirs.size());
     vector<TObject*> mc_data_objs(mc_dirs.size());
 
+    if(data_dirs.front()->Get(data_name) == nullptr) continue;
+    if(mc_dirs.front()->Get(name) == nullptr) continue;
+    bool do_mc_data = (data_name != name) && (mc_dirs.front()->Get(data_name) != nullptr);
+
     for(size_t idir = 0; idir < data_dirs.size(); ++idir){
       data_objs.at(idir) = data_dirs.at(idir)->Get(data_name);
       mc_objs.at(idir) = mc_dirs.at(idir)->Get(name);
       mc_data_objs.at(idir) = mc_dirs.at(idir)->Get(data_name);
-      if(data_objs.back() == nullptr) throw runtime_error(string("Could not get data object "+data_name));
-      if(mc_objs.back() == nullptr) throw runtime_error(string("Could not get mc object "+name));
-      if(mc_data_objs.back() == nullptr) throw runtime_error(string("Could not get mc_data object "+data_name));
+      if(data_objs.at(idir) == nullptr) throw runtime_error(string("Could not get data object "+data_name));
+      if(mc_objs.at(idir) == nullptr) throw runtime_error(string("Could not get mc object "+name));
+      if(do_mc_data && mc_objs.at(idir) == nullptr) throw runtime_error(string("Could not get mc object "+name));
     }
     PrintObjects(data_objs, mc_objs, ext, get_true);
-    if(data_name != name){
-      PrintObjects(data_objs, mc_objs, ext, false);
+    if(do_mc_data){
+      PrintObjects(data_objs, mc_data_objs, ext, false);
     }
   }
 }
@@ -177,7 +183,7 @@ void PrintCanvas(const vector<TCanvas*> &data_cans,
     for(size_t ican = 0; ican < data_cans.size(); ++ican){
       data_objs.at(ican) = data_cans.at(ican)->GetPrimitive(data_name);
       mc_objs.at(ican) = mc_cans.at(ican)->GetPrimitive(name);
-      if(data_objs.back() == nullptr || mc_objs.back() == nullptr) need_continue = true;
+      if(data_objs.at(ican) == nullptr || mc_objs.at(ican) == nullptr) need_continue = true;
     }
     if(need_continue) continue;
 
@@ -244,8 +250,8 @@ void Print2D(const vector<TH2*> &data_hists,
   if(data_hists.front() == nullptr) throw runtime_error("Leading data histogram is null");
   TH2D hmax = TranslateHisto(*data_hists.front());
   TH2D hmin = TranslateHisto(*data_hists.front());
-  for(int ix = 0; ix <= hmax.GetNbinsX(); ++ix){
-    for(int iy = 0; iy <= hmin.GetNbinsY(); ++iy){
+  for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
+    for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
       hmax.SetBinContent(ix, iy, -1.);
       hmin.SetBinContent(ix, iy, -1.);
     }
@@ -256,8 +262,8 @@ void Print2D(const vector<TH2*> &data_hists,
     TH2D hdata = TranslateHisto(*data_hists.at(i));
     TH2D hmc = TranslateHisto(*mc_hists.at(i));
     hdata.Divide(&hmc);
-    for(int ix = 0; ix <= hmax.GetNbinsX(); ++ix){
-      for(int iy = 0; iy <= hmin.GetNbinsY(); ++iy){
+    for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
+      for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
 	double z = hdata.GetBinContent(ix, iy);
 	double zmax = hmax.GetBinContent(ix, iy);
 	double zmin = hmin.GetBinContent(ix, iy);
@@ -268,12 +274,12 @@ void Print2D(const vector<TH2*> &data_hists,
   }
 
   TH2D hmid = hmax;
-  for(int ix = 0; ix <= hmax.GetNbinsX(); ++ix){
-    for(int iy = 0; iy <= hmin.GetNbinsY(); ++iy){
-      double err = 0.5*(hmax.GetBinContent(ix, iy)-hmin.GetBinContent(ix, iy));
-      double avg = hmin.GetBinContent(ix, iy)+err;
+  for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
+    for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
+      double err = hmax.GetBinContent(ix, iy)-hmin.GetBinContent(ix, iy);
+      double avg = hmin.GetBinContent(ix, iy)+0.5*err;
       hmid.SetBinContent(ix, iy, avg);
-      hmin.SetBinError(ix, iy, err);
+      hmid.SetBinError(ix, iy, err);
     }
   }
 
