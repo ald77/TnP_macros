@@ -2,6 +2,7 @@
 #define H_DIFF_DIRS
 
 #include <fstream>
+#include <string>
 #include <vector>
 
 #include "TString.h"
@@ -25,8 +26,11 @@ void PrintLine(std::ofstream &file, TH2 const * const histo, int bin, const TStr
 void GetPatrioticPalette();
 void GetRainbowPalette();
 
+std::vector<double> RemoveOutliers(const std::vector<double> &v);
 double Median(std::vector<double> v);
+double GoodVal(const std::vector<double> &v);
 
+std::string FixName();
 template<typename To, typename From>
 std::vector<To*> Convert(const std::vector<From*> &in){
   std::vector<To*> out(in.size());

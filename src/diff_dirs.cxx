@@ -28,6 +28,7 @@ namespace{
   const int bands = 999;
   int rainbow[bands];
   int patriotic[bands];
+  string current_name = "";
 }
 
 int main(){
@@ -38,7 +39,7 @@ int main(){
   gStyle->SetPalette(bands, patriotic);
 
   vector<TString> dirs = {"~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_19_normal",
-			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_expbkg",
+			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_expbkg_v2",
 			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_cbres",
 			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_redrange_v2"};
 
@@ -76,8 +77,10 @@ void PrintScaleFactors(const vector<TString> &dirs, const TString &file_ext){
       throw runtime_error(string("Could not open mc file"));
     }
   }
+  current_name = file_ext;
   PrintDirectory(Convert<TDirectory>(data_files), Convert<TDirectory>(mc_files),
 		 file_ext, true);
+  current_name = "";
   for(auto &file: data_files){
     if(file != nullptr){
       delete file;
@@ -250,7 +253,6 @@ void Print2D(const vector<TH2*> &data_hists,
 	     const TString &ext){
   if(data_hists.size() != mc_hists.size()) throw runtime_error("Different number of data and MC hists");
   if(data_hists.size() == 0) throw runtime_error("No histograms");
-
   if(data_hists.front() == nullptr) throw runtime_error("Leading data histogram is null");
   TH2D hmax = TranslateHisto(*data_hists.front());
   TH2D hmin = TranslateHisto(*data_hists.front());
@@ -261,19 +263,23 @@ void Print2D(const vector<TH2*> &data_hists,
     }
   }
 
-  TH2D hnominal = hmax;
   vector<vector<vector<double> > > stats(hmax.GetNbinsX(), vector<vector<double> >(hmax.GetNbinsY(), vector<double>(0)));
+  vector<vector<vector<double> > > vals(hmax.GetNbinsX(), vector<vector<double> >(hmax.GetNbinsY(), vector<double>(0)));
   for(size_t i = 0; i < data_hists.size(); ++i){
     if(data_hists.at(i) == nullptr || mc_hists.at(i) == nullptr) continue;
     TH2D hdata = TranslateHisto(*data_hists.at(i));
     TH2D hmc = TranslateHisto(*mc_hists.at(i));
     hdata.Divide(&hmc);
-    if(i==0) hnominal = hdata;
     for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
       for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
 	if(ix >= 1 && ix <= hmax.GetNbinsX()
 	   && iy >= 1 && iy <= hmax.GetNbinsY()){
-	  stats.at(ix-1).at(iy-1).push_back(hdata.GetBinError(ix ,iy));
+	  double this_content = hdata.GetBinContent(ix, iy);
+	  double this_error = hdata.GetBinError(ix, iy);
+	  if(!std::isnan(this_content) && !std::isnan(this_error)){
+	    vals.at(ix-1).at(iy-1).push_back(this_content);
+	    stats.at(ix-1).at(iy-1).push_back(this_error);
+	  }
 	}
 	double z = hdata.GetBinContent(ix, iy);
 	double zmax = hmax.GetBinContent(ix, iy);
@@ -289,13 +295,24 @@ void Print2D(const vector<TH2*> &data_hists,
   TH2D hmid = hmax;
   for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
     for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
-      double err = hmax.GetBinContent(ix, iy)-hmin.GetBinContent(ix, iy);
-      double val = hnominal.GetBinContent(ix, iy);
-      hmid.SetBinContent(ix, iy, val);
       int iix = (ix < 1) ? 1 : ((ix > hmax.GetNbinsX()) ? hmax.GetNbinsX() : ix);
       int iiy = (iy < 1) ? 1 : ((iy > hmax.GetNbinsY()) ? hmax.GetNbinsY() : iy);
-      hmid.SetBinError(ix, iy, hypot(err, stat_mult*Median(stats.at(iix-1).at(iiy-1))));
+      vector<double> good_vals = RemoveOutliers(vals.at(iix-1).at(iiy-1));
+      double maxval = *max_element(good_vals.cbegin(), good_vals.cend());
+      double minval = *min_element(good_vals.cbegin(), good_vals.cend());
+      double err = maxval-minval;
+      hmid.SetBinContent(ix, iy, GoodVal(vals.at(iix-1).at(iiy-1)));
+      hmid.SetBinError(ix, iy, hypot(err, stat_mult*GoodVal(stats.at(iix-1).at(iiy-1))));
     }
+  }
+
+  if(ext.find("_cnt_eff_plots_probe_sc_et_") != string::npos){
+    TFile out_file("merged_result.root","update");
+    out_file.cd();
+    hmid.SetName(FixName().c_str());
+    hmid.SetTitle(FixName().c_str());
+    hmid.Write();
+    out_file.Close();
   }
 
   TCanvas canvas;
@@ -383,4 +400,71 @@ double Median(vector<double> v){
   bool is_odd = (v.size() % 2);
   size_t mid = floor(0.5*(v.size()-1));
   return is_odd ? v.at(mid) : 0.5*(v.at(mid)+v.at(mid+1));
+}
+
+vector<double> RemoveOutliers(const vector<double> &v){
+  if(v.size() <= 2) return v;
+  double mean = accumulate(v.cbegin(), v.cend(), 0.)/v.size();
+  double sigma = 0.;
+  for(const auto &x: v){
+    double delta = x-mean;
+    sigma += delta*delta;
+  }
+  sigma = sqrt(sigma/v.size());
+  if(sigma <= 0.) return v;
+  vector<double> out;
+  for(const auto &x: v){
+    if(fabs(x-mean)<=sqrt(2.)*sigma) out.push_back(x);
+  }
+  return out;
+}
+
+double GoodVal(const vector<double> &v){
+  return Median(RemoveOutliers(v));
+}
+
+string FixName(){
+  string pretty_name = "BADBADBADBADBAD";
+  if(current_name == "foid2d"){
+    pretty_name = "MVAVLooseFO_and_IDEmu_and_TightIP2D";
+  }else if(current_name == "loose"){
+    pretty_name = "CutBasedLoose";
+  }else if(current_name == "loose2d"){
+    pretty_name = "MVAVLoose_and_TightIP2D";
+  }else if(current_name == "medium"){
+    pretty_name = "CutBasedMedium";
+  }else if(current_name == "mvatightconvihit0chg_act"){
+    pretty_name = "ConvVeto_and_MissInnerHits0_and_ChgConsistent_vs_act";
+  }else if(current_name == "mvatightconvihit0chg_eta"){
+    pretty_name = "ConvVeto_and_MissInnerHits0_and_ChgConsistent_vs_eta";
+  }else if(current_name == "mvatightmulti_act"){
+    pretty_name = "MultiIsoTight_vs_act";
+  }else if(current_name == "mvatightmulti_eta"){
+    pretty_name = "MultiIsoTight_vs_eta";
+  }else if(current_name == "mvatightmultiemu_act"){
+    pretty_name = "MultiIsoTight_vs_act";
+  }else if(current_name == "mvatightmultiemu_eta"){
+    pretty_name = "MultiIsoTight_vs_eta";
+  }else if(current_name == "mvavlooseconvihit1_act"){
+    pretty_name = "ConvVeto_and_MissInnerHits1_vs_act";
+  }else if(current_name == "mvavlooseconvihit1_eta"){
+    pretty_name = "ConvVeto_and_MissInnerHits1_vs_act";
+  }else if(current_name == "mvavloosemini4_act"){
+    pretty_name = "MiniIso0p4_vs_act";
+  }else if(current_name == "mvavloosemini4_eta"){
+    pretty_name = "MiniIso0p4_vs_eta";
+  }else if(current_name == "mvavloosemini_act"){
+    pretty_name = "MiniIso0p1_vs_act";
+  }else if(current_name == "mvavloosemini_eta"){
+    pretty_name = "MiniIso0p1_vs_eta";
+  }else if(current_name == "tight"){
+    pretty_name = "CutBasedTight";
+  }else if(current_name == "tight2d3d"){
+    pretty_name = "MVATight_and_TightIP2D_and_TightIP3D";
+  }else if(current_name == "tightid2d3d"){
+    pretty_name = "MVATight_and_IDEmu_and_TightIP2D_and_TightIP3D";
+  }else if(current_name == "veto"){
+    pretty_name = "CutBasedVeto";
+  }
+  return pretty_name;
 }
