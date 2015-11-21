@@ -31,6 +31,10 @@ double Median(std::vector<double> v);
 double GoodVal(const std::vector<double> &v);
 
 std::string FixName();
+bool IncludePlot();
+
+void FixOverflow(TH2D &h);
+
 template<typename To, typename From>
 std::vector<To*> Convert(const std::vector<From*> &in){
   std::vector<To*> out(in.size());

@@ -254,26 +254,28 @@ void Print2D(const vector<TH2*> &data_hists,
   if(data_hists.size() != mc_hists.size()) throw runtime_error("Different number of data and MC hists");
   if(data_hists.size() == 0) throw runtime_error("No histograms");
   if(data_hists.front() == nullptr) throw runtime_error("Leading data histogram is null");
-  TH2D hmax = TranslateHisto(*data_hists.front());
-  TH2D hmin = TranslateHisto(*data_hists.front());
-  for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
-    for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
-      hmax.SetBinContent(ix, iy, -1.);
-      hmin.SetBinContent(ix, iy, -1.);
+  TH2D hpretty = TranslateHisto(*data_hists.front());
+  TH2D hresult = *static_cast<TH2D*>(data_hists.front());
+  for(int ix = 0; ix <= hresult.GetNbinsX()+1; ++ix){
+    for(int iy = 0; iy <= hresult.GetNbinsY()+1; ++iy){
+      hpretty.SetBinContent(ix, iy, 0.);
+      hpretty.SetBinError(ix, iy, 1.);
+      hresult.SetBinContent(ix, iy, 0.);
+      hresult.SetBinError(ix, iy, 1.);
     }
   }
 
-  vector<vector<vector<double> > > stats(hmax.GetNbinsX(), vector<vector<double> >(hmax.GetNbinsY(), vector<double>(0)));
-  vector<vector<vector<double> > > vals(hmax.GetNbinsX(), vector<vector<double> >(hmax.GetNbinsY(), vector<double>(0)));
+  vector<vector<vector<double> > > stats(hresult.GetNbinsX(), vector<vector<double> >(hresult.GetNbinsY(), vector<double>(0)));
+  vector<vector<vector<double> > > vals(hresult.GetNbinsX(), vector<vector<double> >(hresult.GetNbinsY(), vector<double>(0)));
   for(size_t i = 0; i < data_hists.size(); ++i){
     if(data_hists.at(i) == nullptr || mc_hists.at(i) == nullptr) continue;
     TH2D hdata = TranslateHisto(*data_hists.at(i));
     TH2D hmc = TranslateHisto(*mc_hists.at(i));
     hdata.Divide(&hmc);
-    for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
-      for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
-	if(ix >= 1 && ix <= hmax.GetNbinsX()
-	   && iy >= 1 && iy <= hmax.GetNbinsY()){
+    for(int ix = 0; ix <= hresult.GetNbinsX()+1; ++ix){
+      for(int iy = 0; iy <= hresult.GetNbinsY()+1; ++iy){
+	if(ix >= 1 && ix <= hresult.GetNbinsX()
+	   && iy >= 1 && iy <= hresult.GetNbinsY()){
 	  double this_content = hdata.GetBinContent(ix, iy);
 	  double this_error = hdata.GetBinError(ix, iy);
 	  if(!std::isnan(this_content) && !std::isnan(this_error)){
@@ -281,51 +283,59 @@ void Print2D(const vector<TH2*> &data_hists,
 	    stats.at(ix-1).at(iy-1).push_back(this_error);
 	  }
 	}
-	double z = hdata.GetBinContent(ix, iy);
-	double zmax = hmax.GetBinContent(ix, iy);
-	double zmin = hmin.GetBinContent(ix, iy);
-	if(z>zmax || zmax < 0.) hmax.SetBinContent(ix, iy, z);
-	if(z<zmin || zmin < 0.) hmin.SetBinContent(ix, iy, z);
       }
     }
   }
 
   bool include_stats = true;
   double stat_mult = include_stats ? 1. : 0.;
-  TH2D hmid = hmax;
-  for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
-    for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
-      int iix = (ix < 1) ? 1 : ((ix > hmax.GetNbinsX()) ? hmax.GetNbinsX() : ix);
-      int iiy = (iy < 1) ? 1 : ((iy > hmax.GetNbinsY()) ? hmax.GetNbinsY() : iy);
+  for(int ix = 0; ix <= hresult.GetNbinsX()+1; ++ix){
+    for(int iy = 0; iy <= hresult.GetNbinsY()+1; ++iy){
+      int iix = (ix < 1) ? 1 : ((ix > hresult.GetNbinsX()) ? hresult.GetNbinsX() : ix);
+      int iiy = (iy < 1) ? 1 : ((iy > hresult.GetNbinsY()) ? hresult.GetNbinsY() : iy);
       vector<double> good_vals = RemoveOutliers(vals.at(iix-1).at(iiy-1));
       double maxval = *max_element(good_vals.cbegin(), good_vals.cend());
       double minval = *min_element(good_vals.cbegin(), good_vals.cend());
       double err = maxval-minval;
-      hmid.SetBinContent(ix, iy, GoodVal(vals.at(iix-1).at(iiy-1)));
-      hmid.SetBinError(ix, iy, hypot(err, stat_mult*GoodVal(stats.at(iix-1).at(iiy-1))));
+      double content = GoodVal(vals.at(iix-1).at(iiy-1));
+      double full_error = hypot(err, stat_mult*GoodVal(stats.at(iix-1).at(iiy-1)));
+      hpretty.SetBinContent(ix, iy, content);
+      hpretty.SetBinError(ix, iy, full_error);
+      hresult.SetBinContent(ix, iy, content);
+      hresult.SetBinError(ix, iy, full_error);
     }
   }
 
-  if(ext.find("_cnt_eff_plots_probe_sc_et_") != string::npos){
+  FixOverflow(hpretty);
+  FixOverflow(hresult);
+
+  if(ext.Contains("_cnt_eff_plots_probe_sc_et_") && IncludePlot()){
     TFile out_file("merged_result.root","update");
     out_file.cd();
-    hmid.SetName(FixName().c_str());
-    hmid.SetTitle(FixName().c_str());
-    hmid.Write();
+    bool do_pretty = true;
+    hresult.SetName(FixName().c_str());
+    hresult.SetTitle(FixName().c_str());
+    hpretty.SetName(FixName().c_str());
+    hpretty.SetTitle(FixName().c_str());
+    if(do_pretty){
+      hpretty.Write();
+    }else{
+      hresult.Write();
+    }
     out_file.Close();
   }
 
   TCanvas canvas;
   gStyle->SetPalette(bands, patriotic);
   canvas.SetLogz();
-  hmid.SetMarkerSize(2);
-  hmid.SetMinimum(0.5);
-  hmid.SetMaximum(2.0);
-  hmid.Draw("colz");
-  hmid.Draw("textesame");
+  hpretty.SetMarkerSize(2);
+  hpretty.SetMinimum(0.5);
+  hpretty.SetMaximum(2.0);
+  hpretty.Draw("colz");
+  hpretty.Draw("textesame");
   canvas.Print("diffs/sf_"+ext+".pdf");
   canvas.Print("diffs/sf_"+ext+".png");
-  PrintTable(&hmid, "diffs_sf_"+ext);
+  PrintTable(&hpretty, "diffs_sf_"+ext);
 }
 
 void PrintTable(TH2 const * const histo, const TString &ext){
@@ -434,29 +444,29 @@ string FixName(){
   }else if(current_name == "medium"){
     pretty_name = "CutBasedMedium";
   }else if(current_name == "mvatightconvihit0chg_act"){
-    pretty_name = "ConvVeto_and_MissInnerHits0_and_ChgConsistent_vs_act";
+    pretty_name = "ConvVeto_and_MissInnerHits0_and_ChgConsistent_vs_RelActivity";
   }else if(current_name == "mvatightconvihit0chg_eta"){
-    pretty_name = "ConvVeto_and_MissInnerHits0_and_ChgConsistent_vs_eta";
+    pretty_name = "ConvVeto_and_MissInnerHits0_and_ChgConsistent_vs_AbsEta";
   }else if(current_name == "mvatightmulti_act"){
-    pretty_name = "MultiIsoTight_vs_act";
+    pretty_name = "MultiIsoTight_vs_RelActivity";
   }else if(current_name == "mvatightmulti_eta"){
-    pretty_name = "MultiIsoTight_vs_eta";
+    pretty_name = "MultiIsoTight_vs_AbsEta";
   }else if(current_name == "mvatightmultiemu_act"){
-    pretty_name = "MultiIsoTight_vs_act";
+    pretty_name = "MultiIsoTight_and_IsoEmu_vs_RelActivity";
   }else if(current_name == "mvatightmultiemu_eta"){
-    pretty_name = "MultiIsoTight_vs_eta";
+    pretty_name = "MultiIsoTight_and_IsoEmu_vs_AbsEta";
   }else if(current_name == "mvavlooseconvihit1_act"){
-    pretty_name = "ConvVeto_and_MissInnerHits1_vs_act";
+    pretty_name = "ConvVeto_and_MissInnerHits1_vs_RelActivity";
   }else if(current_name == "mvavlooseconvihit1_eta"){
-    pretty_name = "ConvVeto_and_MissInnerHits1_vs_act";
+    pretty_name = "ConvVeto_and_MissInnerHits1_vs_AbsEta";
   }else if(current_name == "mvavloosemini4_act"){
-    pretty_name = "MiniIso0p4_vs_act";
+    pretty_name = "MiniIso0p4_vs_RelActivity";
   }else if(current_name == "mvavloosemini4_eta"){
-    pretty_name = "MiniIso0p4_vs_eta";
+    pretty_name = "MiniIso0p4_vs_AbsEta";
   }else if(current_name == "mvavloosemini_act"){
-    pretty_name = "MiniIso0p1_vs_act";
+    pretty_name = "MiniIso0p1_vs_RelActivity";
   }else if(current_name == "mvavloosemini_eta"){
-    pretty_name = "MiniIso0p1_vs_eta";
+    pretty_name = "MiniIso0p1_vs_AbsEta";
   }else if(current_name == "tight"){
     pretty_name = "CutBasedTight";
   }else if(current_name == "tight2d3d"){
@@ -467,4 +477,67 @@ string FixName(){
     pretty_name = "CutBasedVeto";
   }
   return pretty_name;
+}
+
+bool IncludePlot(){
+  if(current_name == "foid2d"){
+    return true;
+  }else if(current_name == "loose"){
+    return true;
+  }else if(current_name == "loose2d"){
+    return true;
+  }else if(current_name == "medium"){
+    return true;
+  }else if(current_name == "mvatightconvihit0chg_act"){
+    return false;
+  }else if(current_name == "mvatightconvihit0chg_eta"){
+    return true;
+  }else if(current_name == "mvatightmulti_act"){
+    return false;
+  }else if(current_name == "mvatightmulti_eta"){
+    return true;
+  }else if(current_name == "mvatightmultiemu_act"){
+    return false;
+  }else if(current_name == "mvatightmultiemu_eta"){
+    return true;
+  }else if(current_name == "mvavlooseconvihit1_act"){
+    return false;
+  }else if(current_name == "mvavlooseconvihit1_eta"){
+    return true;
+  }else if(current_name == "mvavloosemini4_act"){
+    return true;
+  }else if(current_name == "mvavloosemini4_eta"){
+    return true;
+  }else if(current_name == "mvavloosemini_act"){
+    return true;
+  }else if(current_name == "mvavloosemini_eta"){
+    return true;
+  }else if(current_name == "tight"){
+    return true;
+  }else if(current_name == "tight2d3d"){
+    return true;
+  }else if(current_name == "tightid2d3d"){
+    return true;
+  }else if(current_name == "veto"){
+    return true;
+  }else{
+    return false;
+  }
+}
+
+void FixOverflow(TH2D &h){
+  int nx = h.GetNbinsX();
+  int ny = h.GetNbinsY();
+  for(int iy = 0; iy < ny; ++iy){
+    h.SetBinContent(0, iy, h.GetBinContent(1, iy));
+    h.SetBinError(0, iy, h.GetBinError(1, iy));
+    h.SetBinContent(nx+1, iy, h.GetBinContent(nx, iy));
+    h.SetBinError(nx+1, iy, h.GetBinError(nx, iy));
+  }
+  for(int ix = 0; ix < nx; ++ix){
+    h.SetBinContent(ix, 0, h.GetBinContent(ix, 1));
+    h.SetBinError(ix, 0, h.GetBinError(ix, 1));
+    h.SetBinContent(ix, ny+1, h.GetBinContent(ix, ny));
+    h.SetBinError(ix, ny+1, h.GetBinError(ix, ny));
+  }
 }
