@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <algorithm>
+#include <numeric>
 #include <memory>
 
 #include "TStyle.h"
@@ -256,6 +257,8 @@ void Print2D(const vector<TH2*> &data_hists,
   if(data_hists.front() == nullptr) throw runtime_error("Leading data histogram is null");
   TH2D hpretty = TranslateHisto(*data_hists.front());
   TH2D hresult = *static_cast<TH2D*>(data_hists.front());
+  hresult.SetMinimum();
+  hresult.SetMaximum();
   for(int ix = 0; ix <= hresult.GetNbinsX()+1; ++ix){
     for(int iy = 0; iy <= hresult.GetNbinsY()+1; ++iy){
       hpretty.SetBinContent(ix, iy, 0.);
@@ -306,6 +309,7 @@ void Print2D(const vector<TH2*> &data_hists,
       hresult.SetBinError(ix, iy, full_error);
     }
   }
+
 
   FixOverflow(hpretty);
   FixOverflow(hresult);
