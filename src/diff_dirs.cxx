@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <algorithm>
+#include <numeric>
 #include <memory>
 
 #include "TStyle.h"
@@ -293,6 +294,8 @@ void Print2D(const vector<TH2*> &data_hists,
   bool include_stats = true;
   double stat_mult = include_stats ? 1. : 0.;
   TH2D hmid = hmax;
+  hmid.SetMinimum();
+  hmid.SetMaximum();
   for(int ix = 0; ix <= hmax.GetNbinsX()+1; ++ix){
     for(int iy = 0; iy <= hmax.GetNbinsY()+1; ++iy){
       int iix = (ix < 1) ? 1 : ((ix > hmax.GetNbinsX()) ? hmax.GetNbinsX() : ix);
@@ -306,7 +309,7 @@ void Print2D(const vector<TH2*> &data_hists,
     }
   }
 
-  if(ext.find("_cnt_eff_plots_probe_sc_et_") != string::npos){
+  if(ext.Contains("_cnt_eff_plots_probe_sc_et_")){
     TFile out_file("merged_result.root","update");
     out_file.cd();
     hmid.SetName(FixName().c_str());
