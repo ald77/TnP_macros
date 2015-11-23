@@ -298,7 +298,8 @@ void Print2D(const vector<TH2*> &data_hists,
       double minval = *min_element(good_vals.cbegin(), good_vals.cend());
       double err = maxval-minval;
       double content = GoodVal(vals.at(iix-1).at(iiy-1));
-      double full_error = hypot(err, stat_mult*GoodVal(stats.at(iix-1).at(iiy-1)));
+      double min_error = 0.005;
+      double full_error = hypot(hypot(err, min_error), stat_mult*GoodVal(stats.at(iix-1).at(iiy-1)));
       hpretty.SetBinContent(ix, iy, content);
       hpretty.SetBinError(ix, iy, full_error);
       hresult.SetBinContent(ix, iy, content);
@@ -312,7 +313,7 @@ void Print2D(const vector<TH2*> &data_hists,
   if(ext.Contains("_cnt_eff_plots_probe_sc_et_") && IncludePlot()){
     TFile out_file("merged_result.root","update");
     out_file.cd();
-    bool do_pretty = true;
+    bool do_pretty = false;
     hresult.SetName(FixName().c_str());
     hresult.SetTitle(FixName().c_str());
     hpretty.SetName(FixName().c_str());
