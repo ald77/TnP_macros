@@ -39,10 +39,10 @@ int main(){
   gStyle->SetNumberContours(bands);
   gStyle->SetPalette(bands, patriotic);
 
-  vector<TString> dirs = {"~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_19_normal",
-			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_expbkg_v2",
-			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_cbres",
-			  "~/cmssw/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_20_redrange_v2"};
+  vector<TString> dirs = {"~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_27_nominal",
+                          "~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_27_expbkg",
+                          "~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_27_cbres",
+                          "~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_27_redrange"};
 
   PrintScaleFactors(dirs, "foid2d");
   PrintScaleFactors(dirs, "loose");
@@ -80,7 +80,7 @@ void PrintScaleFactors(const vector<TString> &dirs, const TString &file_ext){
   }
   current_name = file_ext;
   PrintDirectory(Convert<TDirectory>(data_files), Convert<TDirectory>(mc_files),
-		 file_ext, true);
+                 file_ext, true);
   current_name = "";
   for(auto &file: data_files){
     if(file != nullptr){
@@ -97,8 +97,8 @@ void PrintScaleFactors(const vector<TString> &dirs, const TString &file_ext){
 }
 
 void PrintDirectory(const vector<TDirectory*> &data_dirs,
-		    const vector<TDirectory*> &mc_dirs,
-		    const TString &ext, bool get_true){
+                    const vector<TDirectory*> &mc_dirs,
+                    const TString &ext, bool get_true){
   if(data_dirs.size() != mc_dirs.size()) throw runtime_error("Different number of data and MC directories");
   if(data_dirs.size() == 0) throw runtime_error("No directories found!");
   string data_path = data_dirs.front()->GetPath();
@@ -146,8 +146,8 @@ void PrintDirectory(const vector<TDirectory*> &data_dirs,
 }
 
 void PrintObjects(const vector<TObject*> &data_objs,
-		  const vector<TObject*> &mc_objs,
-		  const TString &ext, bool get_true){
+                  const vector<TObject*> &mc_objs,
+                  const TString &ext, bool get_true){
   if(data_objs.size() != mc_objs.size()) throw runtime_error("Different number of data and MC objects");
   if(data_objs.size() == 0) throw runtime_error("No objects found!");
   for(const auto data_obj: data_objs){
@@ -160,16 +160,16 @@ void PrintObjects(const vector<TObject*> &data_objs,
   TString mc_name = mc_objs.front()->GetName();
   if(class_name == "TCanvas"){
     PrintCanvas(Convert<TCanvas>(data_objs),
-		Convert<TCanvas>(mc_objs), ext+"_"+mc_name);
+                Convert<TCanvas>(mc_objs), ext+"_"+mc_name);
   }else if(class_name.Contains("TDirectory")){
     PrintDirectory(Convert<TDirectory>(data_objs),
-		   Convert<TDirectory>(mc_objs), ext+"_"+mc_name, get_true);
+                   Convert<TDirectory>(mc_objs), ext+"_"+mc_name, get_true);
   }
 }
 
 void PrintCanvas(const vector<TCanvas*> &data_cans,
-		 const vector<TCanvas*> &mc_cans,
-		 const TString &ext){
+                 const vector<TCanvas*> &mc_cans,
+                 const TString &ext){
   if(data_cans.size() != mc_cans.size()) throw runtime_error("Different number of data and MC canvases");
   if(data_cans.size() == 0) throw runtime_error("No data canvases");
 
@@ -204,7 +204,7 @@ void PrintCanvas(const vector<TCanvas*> &data_cans,
 
     if(class_name.Contains("TH2")){
       Print2D(Convert<TH2>(data_objs),
-	      Convert<TH2>(mc_objs),
+              Convert<TH2>(mc_objs),
               ext+"_"+name);
     }
   }
@@ -225,7 +225,7 @@ TH2D TranslateHisto(const TH2 &input){
       output.SetBinError(ix, iy, input.GetBinError(ix, iy));
     }
   }
-  
+
   for(int ix = 1; ix <= nx; ++ix){
     const TAxis *iaxis = input.GetXaxis();
     TAxis *oaxis = output.GetXaxis();
@@ -250,8 +250,8 @@ TH2D TranslateHisto(const TH2 &input){
 }
 
 void Print2D(const vector<TH2*> &data_hists,
-	     const vector<TH2*> &mc_hists,
-	     const TString &ext){
+             const vector<TH2*> &mc_hists,
+             const TString &ext){
   if(data_hists.size() != mc_hists.size()) throw runtime_error("Different number of data and MC hists");
   if(data_hists.size() == 0) throw runtime_error("No histograms");
   if(data_hists.front() == nullptr) throw runtime_error("Leading data histogram is null");
@@ -277,39 +277,43 @@ void Print2D(const vector<TH2*> &data_hists,
     hdata.Divide(&hmc);
     for(int ix = 0; ix <= hresult.GetNbinsX()+1; ++ix){
       for(int iy = 0; iy <= hresult.GetNbinsY()+1; ++iy){
-	if(ix >= 1 && ix <= hresult.GetNbinsX()
-	   && iy >= 1 && iy <= hresult.GetNbinsY()){
-	  double this_content = hdata.GetBinContent(ix, iy);
-	  double this_error = hdata.GetBinError(ix, iy);
-	  if(!std::isnan(this_content) && !std::isnan(this_error)){
-	    vals.at(ix-1).at(iy-1).push_back(this_content);
-	    stats.at(ix-1).at(iy-1).push_back(this_error);
-	  }
-	}
+        if(ix >= 1 && ix <= hresult.GetNbinsX()
+           && iy >= 1 && iy <= hresult.GetNbinsY()){
+          double this_content = hdata.GetBinContent(ix, iy);
+          double this_error = hdata.GetBinError(ix, iy);
+          if(!std::isnan(this_content) && !std::isnan(this_error)){
+            vals.at(ix-1).at(iy-1).push_back(this_content);
+            stats.at(ix-1).at(iy-1).push_back(this_error);
+          }
+        }
       }
     }
   }
 
-  bool include_stats = true;
+  bool include_stats = true, include_syst = true, include_min = true;
   double stat_mult = include_stats ? 1. : 0.;
+  double syst_mult = include_syst ? 1. : 0.;
+  double min_mult = include_min ? 1. : 0.;
   for(int ix = 0; ix <= hresult.GetNbinsX()+1; ++ix){
     for(int iy = 0; iy <= hresult.GetNbinsY()+1; ++iy){
       int iix = (ix < 1) ? 1 : ((ix > hresult.GetNbinsX()) ? hresult.GetNbinsX() : ix);
       int iiy = (iy < 1) ? 1 : ((iy > hresult.GetNbinsY()) ? hresult.GetNbinsY() : iy);
-      vector<double> good_vals = RemoveOutliers(vals.at(iix-1).at(iiy-1));
+      vector<size_t> good_indices = GoodIndices(vals.at(iix-1).at(iiy-1), stats.at(iix-1).at(iiy-1));
+      vector<double> good_vals = GoodValues(vals.at(iix-1).at(iiy-1), good_indices);
+      vector<double> good_stats = GoodValues(vals.at(iix-1).at(iiy-1), good_indices);
+      double good_val = GoodValue(vals.at(iix-1).at(iiy-1), good_indices);
+      double good_stat = GoodValue(stats.at(iix-1).at(iiy-1), good_indices);
       double maxval = *max_element(good_vals.cbegin(), good_vals.cend());
       double minval = *min_element(good_vals.cbegin(), good_vals.cend());
       double err = maxval-minval;
-      double content = GoodVal(vals.at(iix-1).at(iiy-1));
       double min_error = 0.005;
-      double full_error = hypot(hypot(err, min_error), stat_mult*GoodVal(stats.at(iix-1).at(iiy-1)));
-      hpretty.SetBinContent(ix, iy, content);
+      double full_error = hypot(hypot(syst_mult*err, min_mult*min_error), stat_mult*good_stat);
+      hpretty.SetBinContent(ix, iy, good_val);
       hpretty.SetBinError(ix, iy, full_error);
-      hresult.SetBinContent(ix, iy, content);
+      hresult.SetBinContent(ix, iy, good_val);
       hresult.SetBinError(ix, iy, full_error);
     }
   }
-
 
   FixOverflow(hpretty);
   FixOverflow(hresult);
@@ -415,27 +419,6 @@ double Median(vector<double> v){
   bool is_odd = (v.size() % 2);
   size_t mid = floor(0.5*(v.size()-1));
   return is_odd ? v.at(mid) : 0.5*(v.at(mid)+v.at(mid+1));
-}
-
-vector<double> RemoveOutliers(const vector<double> &v){
-  if(v.size() <= 2) return v;
-  double mean = accumulate(v.cbegin(), v.cend(), 0.)/v.size();
-  double sigma = 0.;
-  for(const auto &x: v){
-    double delta = x-mean;
-    sigma += delta*delta;
-  }
-  sigma = sqrt(sigma/v.size());
-  if(sigma <= 0.) return v;
-  vector<double> out;
-  for(const auto &x: v){
-    if(fabs(x-mean)<=sqrt(2.)*sigma) out.push_back(x);
-  }
-  return out;
-}
-
-double GoodVal(const vector<double> &v){
-  return Median(RemoveOutliers(v));
 }
 
 string FixName(){
@@ -544,5 +527,84 @@ void FixOverflow(TH2D &h){
     h.SetBinError(ix, 0, h.GetBinError(ix, 1));
     h.SetBinContent(ix, ny+1, h.GetBinContent(ix, ny));
     h.SetBinError(ix, ny+1, h.GetBinError(ix, ny));
+  }
+}
+
+vector<size_t> GoodIndices(const vector<double> &vals,
+                           const vector<double> &stats){
+  vector<size_t> out_vals = GoodIndices(vals, true, 1.);
+  vector<size_t> out_stats = GoodIndices(stats);
+  vector<size_t> out;
+  for(const auto &vi: out_vals){
+    if(find(out_stats.cbegin(), out_stats.cend(), vi) != out_stats.cend()){
+      out.push_back(vi);
+    }
+  }
+  return out;
+}
+
+vector<size_t> GoodIndices(const vector<double> &v, bool do_target, double target){
+  vector<size_t> out;
+  if(v.size() <= 2){
+    for(size_t i = 0; i < v.size(); ++i){
+      out.push_back(i);
+    }
+  }else{
+    double mean = accumulate(v.cbegin(), v.cend(), 0.)/v.size();
+    double sigma = 0.;
+    for(const auto &x: v){
+      double delta = x-mean;
+      sigma += delta*delta;
+    }
+    sigma = sqrt(sigma/v.size());
+    if(sigma <= 0.){
+      for(size_t i = 0; i < v.size(); ++i){
+        out.push_back(i);
+      }
+      return out;
+    }
+    for(size_t i = 0; i < v.size(); ++i){
+      double x = v.at(i);
+      if(fabs(x-mean)<=sqrt(2.)*sigma) out.push_back(i);
+    }
+  }
+  if(do_target && out.size() == v.size() && v.size() == 4){
+    vector<double> sorted = v;
+    sort(sorted.begin(), sorted.end());
+    double dlow = sorted.at(1)-sorted.at(0);
+    double dhigh = sorted.at(3)-sorted.at(2);
+    double dside = max(dlow, dhigh);
+    double dmid = sorted.at(2)-sorted.at(1);
+    if(dmid > 5.*dside){
+      out.resize(2);
+      dlow = fabs(target-sorted.at(1));
+      dhigh = fabs(target-sorted.at(2));
+      if(dlow <= dhigh){
+	out.at(0) = (0);
+	out.at(1) = (1);
+      }else{
+	out.at(0) = (2);
+	out.at(1) = (3);
+      }
+    }
+  }
+  return out;
+}
+
+vector<double> GoodValues(const vector<double> &vx,
+                          const vector<size_t> &vi){
+  vector<double> out(vi.size());
+  for(size_t i = 0; i < vi.size(); ++i){
+    out.at(i) = vx.at(vi.at(i));
+  }
+  return out;
+}
+
+double GoodValue(const vector<double> &vx,
+                 const vector<size_t> &vi){
+  if(find(vi.cbegin(), vi.cend(), 0) != vi.cend()){
+    return vx.at(0);
+  }else{
+    return Median(GoodValues(vx, vi));
   }
 }
