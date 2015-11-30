@@ -34,9 +34,11 @@ bool IncludePlot();
 void FixOverflow(TH2D &h);
 
 std::vector<std::size_t> GoodIndices(const std::vector<double> &vals,
-                                     const std::vector<double> &stats);
+                                     const std::vector<double> &stats,
+				     double max_sigma);
 
 std::vector<std::size_t> GoodIndices(const std::vector<double> &v,
+				     double max_sigma,
 				     bool do_target = false,
 				     double target = 1.);
 
