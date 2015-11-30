@@ -290,11 +290,6 @@ void Print2D(const vector<TH2*> &data_hists,
     }
   }
 
-  double max_sigma = sqrt(2.);//Threshold can just barely reject 2 outliers out of 4
-  if(ext.Contains("probe_sc_abseta_bin2")){
-    max_sigma = sqrt(sqrt(2.*3.));//Geometric mean of thresholds just barely able to reject 1 or 2 outliers out of 4
-  }
-
   bool include_stats = true, include_syst = true, include_min = true;
   double stat_mult = include_stats ? 1. : 0.;
   double syst_mult = include_syst ? 1. : 0.;
@@ -303,8 +298,14 @@ void Print2D(const vector<TH2*> &data_hists,
     for(int iy = 0; iy <= hresult.GetNbinsY()+1; ++iy){
       int iix = (ix < 1) ? 1 : ((ix > hresult.GetNbinsX()) ? hresult.GetNbinsX() : ix);
       int iiy = (iy < 1) ? 1 : ((iy > hresult.GetNbinsY()) ? hresult.GetNbinsY() : iy);
+      double max_sigma = sqrt(2.);//Loosest possible that can only reject 1 outlier of 4
+      if(!ext.Contains("_act_") && !ext.Contains("mvavloosemini4") && iy == 3){
+	max_sigma = sqrt(3.);//Threshold for being able to reject 1 outlier of 4. 
+      }
+      cout << ext << ' ' << ix << ' ' << iy << " (" << iix << ' ' << iiy << ')' << endl;
+      bool do_debug = (iix == ix && iiy == iy && ext.Contains("cnt_eff_plots_probe_sc_et"));
       vector<size_t> good_indices = GoodIndices(vals.at(iix-1).at(iiy-1), stats.at(iix-1).at(iiy-1),
-						max_sigma);
+						max_sigma, do_debug);
       vector<double> good_vals = GoodValues(vals.at(iix-1).at(iiy-1), good_indices);
       vector<double> good_stats = GoodValues(vals.at(iix-1).at(iiy-1), good_indices);
       double good_val = GoodValue(vals.at(iix-1).at(iiy-1), good_indices);
@@ -538,9 +539,9 @@ void FixOverflow(TH2D &h){
 
 vector<size_t> GoodIndices(const vector<double> &vals,
                            const vector<double> &stats,
-			   double max_sigma){
-  vector<size_t> out_vals = GoodIndices(vals, max_sigma, true, 1.);
-  vector<size_t> out_stats = GoodIndices(stats, max_sigma);
+			   double max_sigma, bool do_debug){
+  vector<size_t> out_vals = GoodIndices(vals, max_sigma, true, 1., do_debug);
+  vector<size_t> out_stats = GoodIndices(stats, max_sigma, false, 0., false);
   vector<size_t> out;
   for(const auto &vi: out_vals){
     if(find(out_stats.cbegin(), out_stats.cend(), vi) != out_stats.cend()){
@@ -551,7 +552,7 @@ vector<size_t> GoodIndices(const vector<double> &vals,
 }
 
 vector<size_t> GoodIndices(const vector<double> &v, double max_sigma,
-			   bool do_target, double target){
+			   bool do_target, double target, bool do_debug){
   vector<size_t> out;
   if(v.size() <= 2){
     for(size_t i = 0; i < v.size(); ++i){
@@ -569,11 +570,12 @@ vector<size_t> GoodIndices(const vector<double> &v, double max_sigma,
       for(size_t i = 0; i < v.size(); ++i){
         out.push_back(i);
       }
+      if(do_debug) cout << "Removed " << (v.size() - out.size()) << " outliers" << endl;
       return out;
     }
     for(size_t i = 0; i < v.size(); ++i){
       double x = v.at(i);
-      if(fabs(x-mean)<=max_sigma*sigma) out.push_back(i);
+      if(fabs(x-mean)<max_sigma*sigma) out.push_back(i);
     }
   }
   if(do_target && out.size() == v.size() && v.size() == 4){
@@ -596,6 +598,7 @@ vector<size_t> GoodIndices(const vector<double> &v, double max_sigma,
       }
     }
   }
+  if(do_debug) cout << "Removed " << (v.size() - out.size()) << " outliers" << endl;
   return out;
 }
 
