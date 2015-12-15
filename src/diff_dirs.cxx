@@ -39,10 +39,10 @@ int main(){
   gStyle->SetNumberContours(bands);
   gStyle->SetPalette(bands, patriotic);
 
-  vector<TString> dirs = {"~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_27_nominal",
-                          "~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_27_expbkg",
-                          "~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_27_cbres",
-                          "~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_11_27_redrange"};
+  vector<TString> dirs = {"~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_12_01_nominal_2",
+                          "~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_12_01_expbkg",
+                          "~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_12_01_cbres_2",
+                          "~/cmssw/tnp/CMSSW_7_4_15/src/PhysicsTools/TagAndProbe/test/2015_12_01_redrange"};
 
   PrintScaleFactors(dirs, "foid2d");
   PrintScaleFactors(dirs, "loose");
@@ -298,9 +298,9 @@ void Print2D(const vector<TH2*> &data_hists,
     for(int iy = 0; iy <= hresult.GetNbinsY()+1; ++iy){
       int iix = (ix < 1) ? 1 : ((ix > hresult.GetNbinsX()) ? hresult.GetNbinsX() : ix);
       int iiy = (iy < 1) ? 1 : ((iy > hresult.GetNbinsY()) ? hresult.GetNbinsY() : iy);
-      double max_sigma = sqrt(2.);//Loosest possible that can only reject 1 outlier of 4
+      double max_sigma = sqrt(999.);//Loosest possible that can only reject 1 outlier of 4
       if(!ext.Contains("_act_") && !ext.Contains("mvavloosemini4") && iy == 3){
-	max_sigma = sqrt(3.);//Threshold for being able to reject 1 outlier of 4. 
+	max_sigma = sqrt(999.);//Threshold for being able to reject 1 outlier of 4. 
       }
       cout << ext << ' ' << ix << ' ' << iy << " (" << iix << ' ' << iiy << ')' << endl;
       bool do_debug = (iix == ix && iiy == iy && ext.Contains("cnt_eff_plots_probe_sc_et"));
@@ -325,7 +325,7 @@ void Print2D(const vector<TH2*> &data_hists,
   FixOverflow(hpretty);
   FixOverflow(hresult);
 
-  if(ext.Contains("_cnt_eff_plots_probe_sc_et_") && IncludePlot()){
+  if(ext.Contains("_cnt_eff_plots_probe_Ele_pt_") && IncludePlot()){
     TFile out_file("merged_result.root","update");
     out_file.cd();
     bool do_pretty = false;
@@ -578,7 +578,7 @@ vector<size_t> GoodIndices(const vector<double> &v, double max_sigma,
       if(fabs(x-mean)<max_sigma*sigma) out.push_back(i);
     }
   }
-  if(do_target && out.size() == v.size() && v.size() == 4){
+  if(false && do_target && out.size() == v.size() && v.size() == 4){
     vector<double> sorted = v;
     sort(sorted.begin(), sorted.end());
     double dlow = sorted.at(1)-sorted.at(0);
