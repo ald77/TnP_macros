@@ -9,6 +9,7 @@ do
     ./run/print_all.exe &
     ./run/print_scale_factors.exe &
     wait
+    ssh lxplus "touch ~/www/TagAndProbe/25ns/details/$mydir/index.php || cp -r ~/www/TagAndProbe/25ns/details/.blank_dir ~/www/TagAndProbe/25ns/details/$mydir" 
     rsync -vaz -P plots/*.pdf lxplus:~/www/TagAndProbe/25ns/details/$mydir/all_pdfs
     rsync -vaz -P plots/*.png lxplus:~/www/TagAndProbe/25ns/details/$mydir/all_pngs
     ssh lxplus "cd ~/www/TagAndProbe/25ns/details/$mydir && ./.move_plots.sh" 
